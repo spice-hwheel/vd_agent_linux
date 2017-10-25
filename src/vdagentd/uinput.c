@@ -149,6 +149,7 @@ void vdagentd_uinput_update_size(struct vdagentd_uinput **uinputp,
     /* wheel */
     ioctl(uinput->fd, UI_SET_EVBIT, EV_REL);
     ioctl(uinput->fd, UI_SET_RELBIT, REL_WHEEL);
+    ioctl(uinput->fd, UI_SET_RELBIT, REL_HWHEEL);
 
     /* abs ptr */
     ioctl(uinput->fd, UI_SET_EVBIT, EV_ABS);
@@ -198,6 +199,10 @@ void vdagentd_uinput_do_mouse(struct vdagentd_uinput **uinputp,
         { .name = "up",     .mask =  VD_AGENT_UBUTTON_MASK, .btn = 1  },
         { .name = "down",   .mask =  VD_AGENT_DBUTTON_MASK, .btn = -1 },
     };
+    static const struct button_s hwheel[] = {
+        { .name = "left",   .mask =  VD_AGENT_WLBUTTON_MASK, .btn = 1  },
+        { .name = "right",  .mask =  VD_AGENT_WRBUTTON_MASK, .btn = -1 },
+    };
     int i, down;
 
     if (*uinputp) {
@@ -245,6 +250,16 @@ void vdagentd_uinput_do_mouse(struct vdagentd_uinput **uinputp,
             if (uinput->debug)
                 syslog(LOG_DEBUG, "mouse: wheel-%s", wheel[i].name);
             uinput_send_event(uinputp, EV_REL, REL_WHEEL, wheel[i].btn);
+        }
+    }
+    for (i = 0; i < sizeof(hwheel)/sizeof(hwheel[0]) && *uinputp; i++) {
+        if ((uinput->last.buttons & hwheel[i].mask) ==
+                (mouse->buttons & hwheel[i].mask))
+            continue;
+        if (mouse->buttons & hwheel[i].mask) {
+            if (uinput->debug)
+                syslog(LOG_DEBUG, "mouse: hwheel-%s", hwheel[i].name);
+            uinput_send_event(uinputp, EV_REL, REL_HWHEEL, hwheel[i].btn);
         }
     }
 
